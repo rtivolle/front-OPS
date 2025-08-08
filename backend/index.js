@@ -13,7 +13,7 @@ mongoose.connect(process.env.MONGO_URI, {
 const app = express();
 
 // Body parser middleware
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 
 // A simple test route
 app.get('/', (req, res) => {
@@ -22,6 +22,13 @@ app.get('/', (req, res) => {
 
 // Mount auth routes
 app.use('/api/auth', require('./routes/auth'));
+
+// Mount storage and files routes
+app.use('/api/storage', require('./routes/storage'));
+app.use('/api/files', require('./routes/files'));
+
+// Mount pipeline callback route
+app.use('/api/pipeline', require('./routes/pipeline'));
 
 const PORT = process.env.PORT || 5000;
 
