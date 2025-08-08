@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, Outlet, Navigate } from 'react-router-dom';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
@@ -7,16 +7,60 @@ import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import './App.css';
 
 const Layout = () => {
-  const isAuthenticated = () => {
-    return localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  // Fonction pour vérifier l'authentification
+  const checkAuth = () => {
+    return !!(localStorage.getItem('authToken') || sessionStorage.getItem('authToken'));
   };
+
+  // Effect pour surveiller les changements d'authentification
+  useEffect(() => {
+    const updateAuthState = () => {
+      setIsAuthenticated(checkAuth());
+    };
+
+    // Vérifier l'état initial
+    updateAuthState();
+
+    // Écouter les changements de localStorage et sessionStorage
+    const handleStorageChange = (e) => {
+      if (e.key === 'authToken' || e.key === 'userData') {
+        updateAuthState();
+      }
+    };
+
+    // Ajouter les event listeners
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Event personnalisé pour les changements d'auth
+    const handleAuthChange = () => {
+      updateAuthState();
+    };
+    
+    window.addEventListener('authChange', handleAuthChange);
+
+    // Vérifier périodiquement l'état d'auth (au cas où)
+    const interval = setInterval(updateAuthState, 1000);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('authChange', handleAuthChange);
+      clearInterval(interval);
+    };
+  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem('authToken');
     localStorage.removeItem('userData');
     sessionStorage.removeItem('authToken');
     sessionStorage.removeItem('userData');
-    window.location.href = '/login';
+    
+    // Déclencher l'event personnalisé
+    window.dispatchEvent(new Event('authChange'));
+    
+    // Rediriger
+    window.location.replace('/login');
   };
 
   return (
@@ -42,7 +86,7 @@ const Layout = () => {
               Front-OPS
             </Link>
             
-            {!isAuthenticated() && (
+            {!isAuthenticated && (
               <ul style={{ display: 'flex', gap: '1.5rem', margin: 0, padding: 0, listStyle: 'none' }}>
                 <li>
                   <Link to="/login">Connexion</Link>
@@ -54,7 +98,7 @@ const Layout = () => {
             )}
           </div>
 
-          {isAuthenticated() && (
+          {isAuthenticated && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
               <Link to="/dashboard">Tableau de bord</Link>
               <button 

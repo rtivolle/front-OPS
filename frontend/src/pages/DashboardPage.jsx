@@ -1,34 +1,15 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from '../utils/translations';
 
 const DashboardPage = () => {
+  const { t, language: currentLanguage } = useTranslation();
   const [userData, setUserData] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
   const [stats, setStats] = useState({
     totalTasks: 42,
     completedTasks: 28,
     pendingTasks: 14,
-    todayTasks: 8,
-    unreadEmails: 23,
-    totalDocuments: 156,
-    recentDocuments: 12
-  });
-
-  // États pour la configuration IMAP
-  const [imapConfig, setImapConfig] = useState({
-    host: '',
-    port: 993,
-    username: '',
-    password: '',
-    tls: true,
-    connected: false
-  });
-
-  // États pour Nextcloud
-  const [nextcloudConfig, setNextcloudConfig] = useState({
-    serverUrl: '',
-    username: '',
-    password: '',
-    connected: false
+    todayTasks: 8
   });
 
   // États pour le chat AI
@@ -42,12 +23,33 @@ const DashboardPage = () => {
     connected: false
   });
 
+  // États pour les paramètres
+  const [language, setLanguage] = useState(currentLanguage);
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+  const [passwordChangeLoading, setPasswordChangeLoading] = useState(false);
+  const [passwordChangeMessage, setPasswordChangeMessage] = useState('');
+
   useEffect(() => {
     // Récupérer les données utilisateur
     const storedUserData = localStorage.getItem('userData') || sessionStorage.getItem('userData');
     if (storedUserData) {
       setUserData(JSON.parse(storedUserData));
     }
+
+    // Écouter les changements de langue
+    const handleLanguageChange = () => {
+      setLanguage(localStorage.getItem('language') || 'fr');
+    };
+
+    window.addEventListener('languageChange', handleLanguageChange);
+    
+    return () => {
+      window.removeEventListener('languageChange', handleLanguageChange);
+    };
   }, []);
 
   const quickActions = [
@@ -63,32 +65,6 @@ const DashboardPage = () => {
     { id: 3, text: 'Rapport mensuel généré', time: 'Il y a 1j', type: 'warning' },
     { id: 4, text: 'Sauvegarde automatique effectuée', time: 'Il y a 2j', type: 'info' }
   ];
-
-  const handleImapConnect = async () => {
-    try {
-      // Ici vous ajouteriez la logique de connexion IMAP
-      console.log('Connexion IMAP...', imapConfig);
-      // Simulation de connexion
-      setTimeout(() => {
-        setImapConfig(prev => ({ ...prev, connected: true }));
-      }, 1000);
-    } catch (error) {
-      console.error('Erreur de connexion IMAP:', error);
-    }
-  };
-
-  const handleNextcloudConnect = async () => {
-    try {
-      // Ici vous ajouteriez la logique de connexion Nextcloud
-      console.log('Connexion Nextcloud...', nextcloudConfig);
-      // Simulation de connexion
-      setTimeout(() => {
-        setNextcloudConfig(prev => ({ ...prev, connected: true }));
-      }, 1000);
-    } catch (error) {
-      console.error('Erreur de connexion Nextcloud:', error);
-    }
-  };
 
   const handleChatSend = async () => {
     if (!chatInput.trim()) return;
@@ -141,23 +117,84 @@ const DashboardPage = () => {
     }
   };
 
+  // Fonction pour changer la langue
+  const changeLanguage = (newLanguage) => {
+    setLanguage(newLanguage);
+    localStorage.setItem('language', newLanguage);
+    // Ici on pourrait ajouter la logique pour recharger les textes dans la nouvelle langue
+    window.dispatchEvent(new Event('languageChange'));
+  };
+
+  // Fonction pour changer le mot de passe
+  const changePassword = async () => {
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      setPasswordChangeMessage(t('passwordMismatch'));
+      return;
+    }
+
+    if (passwordData.newPassword.length < 8) {
+      setPasswordChangeMessage(t('passwordTooShort'));
+      return;
+    }
+
+    setPasswordChangeLoading(true);
+    setPasswordChangeMessage('');
+
+    try {
+      const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+      const response = await fetch('http://localhost:5000/api/auth/change-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          currentPassword: passwordData.currentPassword,
+          newPassword: passwordData.newPassword
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setPasswordChangeMessage(t('passwordSuccess'));
+        setPasswordData({
+          currentPassword: '',
+          newPassword: '',
+          confirmPassword: ''
+        });
+      } else {
+        setPasswordChangeMessage(data.message || 'Erreur lors du changement de mot de passe.');
+      }
+    } catch (error) {
+      console.error('Erreur changement mot de passe:', error);
+      setPasswordChangeMessage(t('connectionError'));
+    } finally {
+      setPasswordChangeLoading(false);
+    }
+  };
+
   const renderTabContent = () => {
     switch (activeTab) {
       case 'overview':
         return renderOverviewTab();
-      case 'email':
-        return renderEmailTab();
-      case 'documents':
-        return renderDocumentsTab();
+      case 'tasks':
+        return renderTasksTab();
+      case 'team':
+        return renderTeamTab();
+      case 'reports':
+        return renderReportsTab();
       case 'chat':
         return renderChatTab();
+      case 'settings':
+        return renderSettingsTab();
       default:
         return renderOverviewTab();
     }
   };
 
   const renderOverviewTab = () => (
-    <>
+    <div>
       {/* Statistiques */}
       <div style={{
         display: 'grid',
@@ -168,8 +205,8 @@ const DashboardPage = () => {
         {[
           { label: 'Total tâches', value: stats.totalTasks, icon: '📋', color: 'var(--primary-color)' },
           { label: 'Terminées', value: stats.completedTasks, icon: '✅', color: 'var(--success-color)' },
-          { label: 'Emails non lus', value: stats.unreadEmails, icon: '📧', color: 'var(--warning-color)' },
-          { label: 'Documents', value: stats.totalDocuments, icon: '�', color: 'var(--secondary-color)' }
+          { label: 'En attente', value: stats.pendingTasks, icon: '⏳', color: 'var(--warning-color)' },
+          { label: 'Aujourd\'hui', value: stats.todayTasks, icon: '📅', color: 'var(--error-color)' }
         ].map((stat, index) => (
           <div
             key={index}
@@ -298,328 +335,486 @@ const DashboardPage = () => {
                 </p>
               </div>
             ))}
+          </div>
         </div>
-      </div>
-    </>
-  );
-
-  const renderEmailTab = () => (
-    <div style={{
-      display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))',
-      gap: '2rem'
-    }}>
-      {/* Configuration IMAP */}
-      <div style={{
-        background: 'var(--surface)',
-        padding: '1.5rem',
-        borderRadius: 'var(--border-radius)',
-        boxShadow: 'var(--shadow)'
-      }}>
-        <h2 style={{ marginBottom: '1.5rem', fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          📧 Configuration Email IMAP
-          {imapConfig.connected && <span style={{ color: 'var(--success-color)', fontSize: '0.8rem' }}>● Connecté</span>}
-        </h2>
-        
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <div className="form-group">
-            <label className="form-label">Serveur IMAP</label>
-            <input
-              type="text"
-              className="form-input"
-              placeholder="imap.gmail.com"
-              value={imapConfig.host}
-              onChange={(e) => setImapConfig(prev => ({ ...prev, host: e.target.value }))}
-            />
-          </div>
-          
-          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1rem' }}>
-            <div className="form-group">
-              <label className="form-label">Nom d'utilisateur</label>
-              <input
-                type="email"
-                className="form-input"
-                placeholder="votre@email.com"
-                value={imapConfig.username}
-                onChange={(e) => setImapConfig(prev => ({ ...prev, username: e.target.value }))}
-              />
-            </div>
-            
-            <div className="form-group">
-              <label className="form-label">Port</label>
-              <input
-                type="number"
-                className="form-input"
-                value={imapConfig.port}
-                onChange={(e) => setImapConfig(prev => ({ ...prev, port: parseInt(e.target.value) }))}
-              />
-            </div>
-          </div>
-          
-          <div className="form-group">
-            <label className="form-label">Mot de passe</label>
-            <input
-              type="password"
-              className="form-input"
-              placeholder="Mot de passe de l'application"
-              value={imapConfig.password}
-              onChange={(e) => setImapConfig(prev => ({ ...prev, password: e.target.value }))}
-            />
-          </div>
-          
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <input
-              type="checkbox"
-              id="tls"
-              checked={imapConfig.tls}
-              onChange={(e) => setImapConfig(prev => ({ ...prev, tls: e.target.checked }))}
-            />
-            <label htmlFor="tls" className="form-label" style={{ margin: 0 }}>
-              Utiliser TLS/SSL
-            </label>
-          </div>
-          
-          <button
-            onClick={handleImapConnect}
-            className="btn btn-primary"
-            disabled={!imapConfig.host || !imapConfig.username || !imapConfig.password}
-          >
-            {imapConfig.connected ? 'Reconnecter' : 'Se connecter'}
-          </button>
-        </div>
-      </div>
-
-      {/* Liste des emails */}
-      <div style={{
-        background: 'var(--surface)',
-        padding: '1.5rem',
-        borderRadius: 'var(--border-radius)',
-        boxShadow: 'var(--shadow)'
-      }}>
-        <h2 style={{ marginBottom: '1.5rem', fontSize: '1.25rem' }}>
-          Emails récents
-        </h2>
-        
-        {imapConfig.connected ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            {[
-              { id: 1, from: 'client@example.com', subject: 'Demande de devis urgent', time: '10:30', unread: true },
-              { id: 2, from: 'team@company.com', subject: 'Réunion équipe demain', time: '09:15', unread: true },
-              { id: 3, from: 'noreply@service.com', subject: 'Rapport mensuel disponible', time: 'Hier', unread: false },
-              { id: 4, from: 'support@platform.com', subject: 'Mise à jour système programmée', time: 'Hier', unread: false }
-            ].map((email) => (
-              <div
-                key={email.id}
-                style={{
-                  padding: '1rem',
-                  background: email.unread ? '#f0f9ff' : 'var(--background)',
-                  borderRadius: 'var(--border-radius)',
-                  borderLeft: `4px solid ${email.unread ? 'var(--primary-color)' : 'var(--border-color)}`,
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease'
-                }}
-                onMouseOver={(e) => e.target.style.transform = 'translateX(4px)'}
-                onMouseOut={(e) => e.target.style.transform = 'translateX(0)'}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
-                  <strong style={{ color: 'var(--text-primary)', fontSize: '0.9rem' }}>
-                    {email.from}
-                  </strong>
-                  <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
-                    {email.time}
-                  </span>
-                </div>
-                <p style={{ 
-                  margin: 0, 
-                  color: 'var(--text-primary)', 
-                  fontSize: '0.9rem',
-                  fontWeight: email.unread ? '600' : '400'
-                }}>
-                  {email.subject}
-                </p>
-              </div>
-            ))}
-            
-            <button className="btn btn-secondary" style={{ marginTop: '1rem' }}>
-              Voir tous les emails
-            </button>
-          </div>
-        ) : (
-          <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>
-            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📧</div>
-            <p>Configurez votre connexion IMAP pour voir vos emails</p>
-          </div>
-        )}
       </div>
     </div>
   );
 
-  const renderDocumentsTab = () => (
+  const renderTasksTab = () => (
     <div style={{
-      display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))',
-      gap: '2rem'
+      background: 'var(--surface)',
+      padding: '2rem',
+      borderRadius: 'var(--border-radius)',
+      boxShadow: 'var(--shadow)',
+      textAlign: 'center'
     }}>
-      {/* Configuration Nextcloud */}
+      <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>📋</div>
+      <h2 style={{ marginBottom: '1rem', color: 'var(--text-primary)' }}>
+        Gestion des tâches
+      </h2>
+      <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>
+        Cette section sera développée pour gérer vos tâches et projets.
+      </p>
+      <button className="btn btn-primary">
+        Créer une nouvelle tâche
+      </button>
+    </div>
+  );
+
+  const renderTeamTab = () => (
+    <div style={{
+      background: 'var(--surface)',
+      padding: '2rem',
+      borderRadius: 'var(--border-radius)',
+      boxShadow: 'var(--shadow)',
+      textAlign: 'center'
+    }}>
+      <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>👥</div>
+      <h2 style={{ marginBottom: '1rem', color: 'var(--text-primary)' }}>
+        Gestion d'équipe
+      </h2>
+      <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>
+        Cette section sera développée pour gérer votre équipe et les collaborateurs.
+      </p>
+      <button className="btn btn-primary">
+        Inviter un membre
+      </button>
+    </div>
+  );
+
+  const renderReportsTab = () => (
+    <div style={{
+      background: 'var(--surface)',
+      padding: '2rem',
+      borderRadius: 'var(--border-radius)',
+      boxShadow: 'var(--shadow)',
+      textAlign: 'center'
+    }}>
+      <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>📊</div>
+      <h2 style={{ marginBottom: '1rem', color: 'var(--text-primary)' }}>
+        Rapports et analyses
+      </h2>
+      <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>
+        Cette section sera développée pour visualiser vos données et générer des rapports.
+      </p>
+      <button className="btn btn-primary">
+        Générer un rapport
+      </button>
+    </div>
+  );
+
+  const renderChatTab = () => (
+    <div style={{
+      background: 'var(--surface)',
+      padding: '1.5rem',
+      borderRadius: 'var(--border-radius)',
+      boxShadow: 'var(--shadow)',
+      height: '600px',
+      display: 'flex',
+      flexDirection: 'column'
+    }}>
+      <h2 style={{ marginBottom: '1.5rem', fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        🤖 Assistant AI Local
+        <span style={{ 
+          color: aiConfig.connected ? 'var(--success-color)' : 'var(--error-color)',
+          fontSize: '0.8rem' 
+        }}>
+          ● {aiConfig.connected ? 'Connecté' : 'Déconnecté'}
+        </span>
+      </h2>
+
+      {/* Configuration AI */}
       <div style={{
-        background: 'var(--surface)',
-        padding: '1.5rem',
+        display: 'flex',
+        gap: '1rem',
+        marginBottom: '1rem',
+        padding: '1rem',
+        background: 'var(--background)',
         borderRadius: 'var(--border-radius)',
-        boxShadow: 'var(--shadow)'
+        fontSize: '0.9rem'
       }}>
-        <h2 style={{ marginBottom: '1.5rem', fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          ☁️ Configuration Nextcloud
-          {nextcloudConfig.connected && <span style={{ color: 'var(--success-color)', fontSize: '0.8rem' }}>● Connecté</span>}
-        </h2>
-        
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <div className="form-group">
-            <label className="form-label">URL du serveur</label>
-            <input
-              type="url"
-              className="form-input"
-              placeholder="https://cloud.example.com"
-              value={nextcloudConfig.serverUrl}
-              onChange={(e) => setNextcloudConfig(prev => ({ ...prev, serverUrl: e.target.value }))}
-            />
-          </div>
-          
-          <div className="form-group">
-            <label className="form-label">Nom d'utilisateur</label>
-            <input
-              type="text"
-              className="form-input"
-              placeholder="votre_nom_utilisateur"
-              value={nextcloudConfig.username}
-              onChange={(e) => setNextcloudConfig(prev => ({ ...prev, username: e.target.value }))}
-            />
-          </div>
-          
-          <div className="form-group">
-            <label className="form-label">Mot de passe d'application</label>
-            <input
-              type="password"
-              className="form-input"
-              placeholder="Mot de passe d'application"
-              value={nextcloudConfig.password}
-              onChange={(e) => setNextcloudConfig(prev => ({ ...prev, password: e.target.value }))}
-            />
-            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: '0.5rem 0 0 0' }}>
-              Utilisez un mot de passe d'application généré dans Nextcloud
-            </p>
-          </div>
-          
-          <button
-            onClick={handleNextcloudConnect}
-            className="btn btn-primary"
-            disabled={!nextcloudConfig.serverUrl || !nextcloudConfig.username || !nextcloudConfig.password}
-          >
-            {nextcloudConfig.connected ? 'Reconnecter' : 'Se connecter'}
-          </button>
+        <div className="form-group" style={{ flex: 1 }}>
+          <label className="form-label">Endpoint AI</label>
+          <input
+            type="text"
+            className="form-input"
+            value={aiConfig.endpoint}
+            onChange={(e) => setAiConfig(prev => ({ ...prev, endpoint: e.target.value }))}
+            placeholder="http://localhost:11434/api/generate"
+          />
+        </div>
+        <div className="form-group" style={{ flex: 1 }}>
+          <label className="form-label">Modèle</label>
+          <input
+            type="text"
+            className="form-input"
+            value={aiConfig.model}
+            onChange={(e) => setAiConfig(prev => ({ ...prev, model: e.target.value }))}
+            placeholder="llama2"
+          />
         </div>
       </div>
 
-      {/* Liste des documents */}
+      {/* Messages */}
       <div style={{
-        background: 'var(--surface)',
-        padding: '1.5rem',
+        flex: 1,
+        overflowY: 'auto',
+        border: '1px solid var(--border-color)',
         borderRadius: 'var(--border-radius)',
-        boxShadow: 'var(--shadow)'
+        padding: '1rem',
+        marginBottom: '1rem',
+        background: 'var(--background)'
       }}>
-        <h2 style={{ marginBottom: '1.5rem', fontSize: '1.25rem' }}>
-          Documents récents
-        </h2>
-        
-        {nextcloudConfig.connected ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            {[
-              { id: 1, name: 'Rapport_Q4_2024.pdf', type: 'pdf', size: '2.3 MB', modified: 'Il y a 2h' },
-              { id: 2, name: 'Presentation_Client.pptx', type: 'presentation', size: '5.1 MB', modified: 'Il y a 4h' },
-              { id: 3, name: 'Budget_2025.xlsx', type: 'spreadsheet', size: '456 KB', modified: 'Hier' },
-              { id: 4, name: 'Contrat_Service.docx', type: 'document', size: '1.2 MB', modified: '2 jours' },
-              { id: 5, name: 'Architecture_Diagram.png', type: 'image', size: '890 KB', modified: '3 jours' }
-            ].map((doc) => {
-              const getIcon = (type) => {
-                switch (type) {
-                  case 'pdf': return '📄';
-                  case 'presentation': return '📊';
-                  case 'spreadsheet': return '📈';
-                  case 'document': return '📝';
-                  case 'image': return '🖼️';
-                  default: return '📁';
-                }
-              };
-
-              return (
-                <div
-                  key={doc.id}
-                  style={{
-                    padding: '1rem',
-                    background: 'var(--background)',
-                    borderRadius: 'var(--border-radius)',
-                    border: '1px solid var(--border-color)',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '1rem'
-                  }}
-                  onMouseOver={(e) => {
-                    e.currentTarget.style.borderColor = 'var(--primary-color)';
-                    e.currentTarget.style.transform = 'translateY(-2px)';
-                  }}
-                  onMouseOut={(e) => {
-                    e.currentTarget.style.borderColor = 'var(--border-color)';
-                    e.currentTarget.style.transform = 'translateY(0)';
-                  }}
-                >
-                  <div style={{ fontSize: '2rem' }}>
-                    {getIcon(doc.type)}
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <p style={{ margin: '0 0 0.25rem 0', fontWeight: '500', color: 'var(--text-primary)' }}>
-                      {doc.name}
-                    </p>
-                    <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                      {doc.size} • Modifié {doc.modified}
-                    </p>
-                  </div>
-                  <button
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: 'var(--primary-color)',
-                      cursor: 'pointer',
-                      padding: '0.5rem',
-                      borderRadius: '4px'
-                    }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      console.log('Télécharger', doc.name);
-                    }}
-                  >
-                    ⬇️
-                  </button>
-                </div>
-              );
-            })}
-            
-            <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-              <button className="btn btn-primary" style={{ flex: 1 }}>
-                📁 Parcourir les dossiers
-              </button>
-              <button className="btn btn-secondary" style={{ flex: 1 }}>
-                📤 Uploader un fichier
-              </button>
+        {chatMessages.map((message) => (
+          <div
+            key={message.id}
+            style={{
+              marginBottom: '1rem',
+              display: 'flex',
+              justifyContent: message.sender === 'user' ? 'flex-end' : 'flex-start'
+            }}
+          >
+            <div
+              style={{
+                maxWidth: '70%',
+                padding: '0.75rem 1rem',
+                borderRadius: '1rem',
+                background: message.sender === 'user' 
+                  ? 'var(--primary-color)' 
+                  : 'var(--surface)',
+                color: message.sender === 'user' 
+                  ? 'white' 
+                  : 'var(--text-primary)',
+                fontSize: '0.9rem',
+                boxShadow: 'var(--shadow)'
+              }}
+            >
+              <p style={{ margin: 0 }}>{message.text}</p>
+              <div style={{
+                fontSize: '0.7rem',
+                opacity: 0.7,
+                marginTop: '0.25rem'
+              }}>
+                {message.timestamp.toLocaleTimeString()}
+              </div>
             </div>
           </div>
-        ) : (
-          <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>
-            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>☁️</div>
-            <p>Configurez votre connexion Nextcloud pour accéder à vos documents</p>
-          </div>
-        )}
+        ))}
       </div>
+
+      {/* Input */}
+      <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <input
+          type="text"
+          className="form-input"
+          value={chatInput}
+          onChange={(e) => setChatInput(e.target.value)}
+          onKeyPress={(e) => e.key === 'Enter' && handleChatSend()}
+          placeholder="Tapez votre message..."
+          style={{ flex: 1 }}
+        />
+        <button
+          onClick={handleChatSend}
+          className="btn btn-primary"
+          disabled={!chatInput.trim()}
+        >
+          Envoyer
+        </button>
+      </div>
+    </div>
+  );
+
+  const renderSettingsTab = () => (
+    <div>
+      <h2 style={{
+        color: 'var(--text-primary)',
+        marginBottom: '2rem',
+        fontSize: '1.5rem',
+        fontWeight: '600'
+      }}>
+        {t('settings')}
+      </h2>
+
+      <div style={{
+        display: 'grid',
+        gap: '2rem',
+        maxWidth: '800px'
+      }}>
+        {/* Section Langue */}
+        <div style={{
+          background: 'var(--surface)',
+          padding: '1.5rem',
+          borderRadius: 'var(--border-radius)',
+          border: '1px solid var(--border-color)'
+        }}>
+          <h3 style={{
+            color: 'var(--text-primary)',
+            marginBottom: '1rem',
+            fontSize: '1.2rem',
+            fontWeight: '500'
+          }}>
+            🌍 {t('languageSettings')}
+          </h3>
+          <p style={{
+            color: 'var(--text-secondary)',
+            marginBottom: '1rem',
+            fontSize: '0.9rem'
+          }}>
+            {t('languageDescription')}
+          </p>
+          <div style={{ display: 'flex', gap: '1rem' }}>
+            <button
+              onClick={() => changeLanguage('fr')}
+              style={{
+                padding: '0.75rem 1.5rem',
+                border: '1px solid var(--border-color)',
+                borderRadius: 'var(--border-radius)',
+                background: language === 'fr' ? 'var(--primary-color)' : 'var(--surface)',
+                color: language === 'fr' ? 'white' : 'var(--text-primary)',
+                cursor: 'pointer',
+                fontSize: '0.9rem',
+                fontWeight: language === 'fr' ? '500' : '400'
+              }}
+            >
+              🇫🇷 Français
+            </button>
+            <button
+              onClick={() => changeLanguage('en')}
+              style={{
+                padding: '0.75rem 1.5rem',
+                border: '1px solid var(--border-color)',
+                borderRadius: 'var(--border-radius)',
+                background: language === 'en' ? 'var(--primary-color)' : 'var(--surface)',
+                color: language === 'en' ? 'white' : 'var(--text-primary)',
+                cursor: 'pointer',
+                fontSize: '0.9rem',
+                fontWeight: language === 'en' ? '500' : '400'
+              }}
+            >
+              🇺🇸 English
+            </button>
+          </div>
+        </div>
+
+        {/* Section Changement de mot de passe */}
+        <div style={{
+          background: 'var(--surface)',
+          padding: '1.5rem',
+          borderRadius: 'var(--border-radius)',
+          border: '1px solid var(--border-color)'
+        }}>
+          <h3 style={{
+            color: 'var(--text-primary)',
+            marginBottom: '1rem',
+            fontSize: '1.2rem',
+            fontWeight: '500'
+          }}>
+            🔒 {t('passwordSettings')}
+          </h3>
+          <p style={{
+            color: 'var(--text-secondary)',
+            marginBottom: '1rem',
+            fontSize: '0.9rem'
+          }}>
+            {t('passwordDescription')}
+          </p>
+          
+          <div style={{ display: 'grid', gap: '1rem', maxWidth: '400px' }}>
+            <div>
+              <label style={{
+                display: 'block',
+                marginBottom: '0.5rem',
+                color: 'var(--text-primary)',
+                fontSize: '0.9rem',
+                fontWeight: '500'
+              }}>
+                {t('currentPassword')}
+              </label>
+              <input
+                type="password"
+                className="form-input"
+                value={passwordData.currentPassword}
+                onChange={(e) => setPasswordData(prev => ({ ...prev, currentPassword: e.target.value }))}
+                placeholder={t('currentPassword')}
+              />
+            </div>
+            
+            <div>
+              <label style={{
+                display: 'block',
+                marginBottom: '0.5rem',
+                color: 'var(--text-primary)',
+                fontSize: '0.9rem',
+                fontWeight: '500'
+              }}>
+                {t('newPassword')}
+              </label>
+              <input
+                type="password"
+                className="form-input"
+                value={passwordData.newPassword}
+                onChange={(e) => setPasswordData(prev => ({ ...prev, newPassword: e.target.value }))}
+                placeholder={t('newPassword')}
+              />
+            </div>
+            
+            <div>
+              <label style={{
+                display: 'block',
+                marginBottom: '0.5rem',
+                color: 'var(--text-primary)',
+                fontSize: '0.9rem',
+                fontWeight: '500'
+              }}>
+                {t('confirmPassword')}
+              </label>
+              <input
+                type="password"
+                className="form-input"
+                value={passwordData.confirmPassword}
+                onChange={(e) => setPasswordData(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                placeholder={t('confirmPassword')}
+              />
+            </div>
+            
+            {passwordChangeMessage && (
+              <div style={{
+                padding: '0.75rem',
+                borderRadius: 'var(--border-radius)',
+                background: passwordChangeMessage.includes('succès') || passwordChangeMessage.includes('success') ? '#d4edda' : '#f8d7da',
+                border: `1px solid ${passwordChangeMessage.includes('succès') || passwordChangeMessage.includes('success') ? '#c3e6cb' : '#f5c6cb'}`,
+                color: passwordChangeMessage.includes('succès') || passwordChangeMessage.includes('success') ? '#155724' : '#721c24',
+                fontSize: '0.9rem'
+              }}>
+                {passwordChangeMessage}
+              </div>
+            )}
+            
+            <button
+              onClick={changePassword}
+              disabled={passwordChangeLoading || !passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword}
+              style={{
+                padding: '0.75rem 1.5rem',
+                background: 'var(--primary-color)',
+                color: 'white',
+                border: 'none',
+                borderRadius: 'var(--border-radius)',
+                cursor: passwordChangeLoading ? 'not-allowed' : 'pointer',
+                fontSize: '0.9rem',
+                fontWeight: '500',
+                opacity: passwordChangeLoading ? 0.7 : 1
+              }}
+            >
+              {passwordChangeLoading ? t('changingPassword') : t('changePassword')}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <div style={{
+      minHeight: '100vh',
+      background: 'var(--background)',
+      fontFamily: 'Inter, system-ui, -apple-system, sans-serif'
+    }}>
+      {/* Header */}
+      <header style={{
+        background: 'var(--surface)',
+        boxShadow: 'var(--shadow)',
+        padding: '1rem 2rem',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center'
+      }}>
+        <h1 style={{
+          fontSize: '1.5rem',
+          fontWeight: 'bold',
+          color: 'var(--primary-color)',
+          margin: 0
+        }}>
+          Dashboard
+        </h1>
+        
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          {userData && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              color: 'var(--text-primary)'
+            }}>
+              <div style={{
+                width: '40px',
+                height: '40px',
+                borderRadius: '50%',
+                background: 'var(--primary-color)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'white',
+                fontWeight: 'bold'
+              }}>
+                {userData.firstName?.charAt(0)}{userData.lastName?.charAt(0)}
+              </div>
+              <span style={{ fontWeight: '500' }}>
+                {userData.firstName} {userData.lastName}
+              </span>
+            </div>
+          )}
+        </div>
+      </header>
+
+      {/* Navigation */}
+      <nav style={{
+        background: 'var(--surface)',
+        borderBottom: '1px solid var(--border-color)',
+        padding: '0 2rem',
+        display: 'flex',
+        gap: '2rem'
+      }}>
+        {[
+          { id: 'overview', label: 'Vue d\'ensemble', icon: '🏠' },
+          { id: 'tasks', label: 'Tâches', icon: '📋' },
+          { id: 'team', label: 'Équipe', icon: '👥' },
+          { id: 'reports', label: 'Rapports', icon: '📊' },
+          { id: 'chat', label: 'Chat AI', icon: '🤖' },
+          { id: 'settings', label: 'Paramètres', icon: '⚙️' }
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            style={{
+              background: 'none',
+              border: 'none',
+              padding: '1rem 0',
+              color: activeTab === tab.id ? 'var(--primary-color)' : 'var(--text-secondary)',
+              borderBottom: activeTab === tab.id ? '2px solid var(--primary-color)' : '2px solid transparent',
+              cursor: 'pointer',
+              fontSize: '0.9rem',
+              fontWeight: '500',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            <span>{tab.icon}</span>
+            {tab.label}
+          </button>
+        ))}
+      </nav>
+
+      {/* Main Content */}
+      <main style={{
+        padding: '2rem',
+        maxWidth: '1400px',
+        margin: '0 auto'
+      }}>
+        {renderTabContent()}
+      </main>
     </div>
   );
 };
