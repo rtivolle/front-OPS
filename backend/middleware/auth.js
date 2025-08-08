@@ -50,7 +50,7 @@ const optionalAuth = async (req, res, next) => {
       token = req.headers.authorization.split(' ')[1];
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       req.user = await User.findById(decoded.id);
-    } catch (error) {
+    } catch {
       // Silent fail - just continue without user
       req.user = null;
     }

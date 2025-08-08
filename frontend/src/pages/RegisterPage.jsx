@@ -115,8 +115,8 @@ const RegisterPage = () => {
     setMessageType('');
 
     try {
-      const { confirmPassword, ...dataToSend } = formData;
-      const response = await axios.post('/api/auth/register', dataToSend);
+      const { confirmPassword: _confirmPassword, ...dataToSend } = formData;
+      const _response = await axios.post('/api/auth/register', dataToSend);
       
       setMessage('Inscription réussie ! Vous allez être redirigé vers la page de connexion...');
       setMessageType('success');
