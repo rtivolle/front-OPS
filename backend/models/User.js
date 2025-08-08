@@ -2,6 +2,16 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
 const UserSchema = new mongoose.Schema({
+  firstName: {
+    type: String,
+    required: [true, 'Please provide a first name'],
+    maxlength: [50, 'First name cannot be more than 50 characters'],
+  },
+  lastName: {
+    type: String,
+    required: [true, 'Please provide a last name'],
+    maxlength: [50, 'Last name cannot be more than 50 characters'],
+  },
   email: {
     type: String,
     required: [true, 'Please provide an email'],
@@ -16,6 +26,10 @@ const UserSchema = new mongoose.Schema({
     required: [true, 'Please provide a password'],
     minlength: 6,
     select: false, // Do not return password by default
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
   },
 });
 

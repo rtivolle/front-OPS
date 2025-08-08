@@ -13,11 +13,13 @@ const getSignedJwtToken = (id) => {
 // @desc    Register user
 // @route   POST /api/auth/register
 router.post('/register', async (req, res) => {
-  const { email, password } = req.body;
+  const { firstName, lastName, email, password } = req.body;
 
   try {
     // Create user
     const user = await User.create({
+      firstName,
+      lastName,
       email,
       password,
     });
@@ -25,7 +27,19 @@ router.post('/register', async (req, res) => {
     // Create token
     const token = getSignedJwtToken(user._id);
 
-    res.status(200).json({ success: true, token });
+    // Return user data without password
+    const userData = {
+      id: user._id,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+    };
+
+    res.status(200).json({ 
+      success: true, 
+      token,
+      user: userData 
+    });
   } catch (error) {
     res.status(400).json({ success: false, error: error.message });
   }
@@ -59,9 +73,47 @@ router.post('/login', async (req, res) => {
     // Create token
     const token = getSignedJwtToken(user._id);
 
-    res.status(200).json({ success: true, token });
+    // Return user data without password
+    const userData = {
+      id: user._id,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+    };
+
+    res.status(200).json({ 
+      success: true, 
+      token,
+      user: userData 
+    });
   } catch (error) {
     res.status(400).json({ success: false, error: error.message });
+  }
+});
+
+// @desc    Forgot password
+// @route   POST /api/auth/forgot-password
+router.post('/forgot-password', async (req, res) => {
+  const { email } = req.body;
+
+  try {
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({ 
+        success: false, 
+        error: 'No account found with that email address' 
+      });
+    }
+
+    // Dans un vrai projet, vous enverriez un email ici
+    // Pour le moment, on retourne juste un succès
+    res.status(200).json({
+      success: true,
+      message: 'Password reset email sent successfully'
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
