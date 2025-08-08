@@ -22,6 +22,8 @@ app.get('/', (req, res) => {
 
 // Mount auth routes
 app.use('/api/auth', require('./routes/auth'));
+// Mount document routes
+app.use('/api/documents', require('./routes/documents'));
 
 const PORT = process.env.PORT || 5000;
 
