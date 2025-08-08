@@ -86,31 +86,23 @@ api.interceptors.response.use(
 export const authService = {
   // Register new user
   register: async (userData) => {
-    try {
-      const response = await api.post('/auth/register', userData);
-      if (response.data.success && response.data.token) {
-        localStorage.setItem('authToken', response.data.token);
-        localStorage.setItem('userData', JSON.stringify(response.data.user));
-      }
-      return response.data;
-    } catch (error) {
-      throw error;
+    const response = await api.post('/auth/register', userData);
+    if (response.data.success && response.data.token) {
+      localStorage.setItem('authToken', response.data.token);
+      localStorage.setItem('userData', JSON.stringify(response.data.user));
     }
+    return response.data;
   },
 
   // Login user
   login: async (credentials, rememberMe = false) => {
-    try {
-      const response = await api.post('/auth/login', credentials);
-      if (response.data.success && response.data.token) {
-        const storage = rememberMe ? localStorage : sessionStorage;
-        storage.setItem('authToken', response.data.token);
-        storage.setItem('userData', JSON.stringify(response.data.user));
-      }
-      return response.data;
-    } catch (error) {
-      throw error;
+    const response = await api.post('/auth/login', credentials);
+    if (response.data.success && response.data.token) {
+      const storage = rememberMe ? localStorage : sessionStorage;
+      storage.setItem('authToken', response.data.token);
+      storage.setItem('userData', JSON.stringify(response.data.user));
     }
+    return response.data;
   },
 
   // Logout user
@@ -130,50 +122,34 @@ export const authService = {
 
   // Get current user
   getCurrentUser: async () => {
-    try {
-      const response = await api.get('/auth/me');
-      if (response.data.success) {
-        const storage = localStorage.getItem('authToken') ? localStorage : sessionStorage;
-        storage.setItem('userData', JSON.stringify(response.data.user));
-      }
-      return response.data;
-    } catch (error) {
-      throw error;
+    const response = await api.get('/auth/me');
+    if (response.data.success) {
+      const storage = localStorage.getItem('authToken') ? localStorage : sessionStorage;
+      storage.setItem('userData', JSON.stringify(response.data.user));
     }
+    return response.data;
   },
 
   // Update user details
   updateDetails: async (userData) => {
-    try {
-      const response = await api.put('/auth/updatedetails', userData);
-      if (response.data.success) {
-        const storage = localStorage.getItem('authToken') ? localStorage : sessionStorage;
-        storage.setItem('userData', JSON.stringify(response.data.user));
-      }
-      return response.data;
-    } catch (error) {
-      throw error;
+    const response = await api.put('/auth/updatedetails', userData);
+    if (response.data.success) {
+      const storage = localStorage.getItem('authToken') ? localStorage : sessionStorage;
+      storage.setItem('userData', JSON.stringify(response.data.user));
     }
+    return response.data;
   },
 
   // Update password
   updatePassword: async (passwordData) => {
-    try {
-      const response = await api.put('/auth/updatepassword', passwordData);
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
+    const response = await api.put('/auth/updatepassword', passwordData);
+    return response.data;
   },
 
   // Forgot password
   forgotPassword: async (email) => {
-    try {
-      const response = await api.post('/auth/forgot-password', { email });
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
+    const response = await api.post('/auth/forgot-password', { email });
+    return response.data;
   },
 
   // Check if user is authenticated

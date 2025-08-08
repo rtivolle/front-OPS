@@ -1,6 +1,6 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import { resolve } from 'path'
+import { fileURLToPath, URL } from 'node:url'
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -45,12 +45,12 @@ export default defineConfig({
   // Path resolution
   resolve: {
     alias: {
-      '@': resolve(__dirname, 'src'),
-      '@components': resolve(__dirname, 'src/components'),
-      '@pages': resolve(__dirname, 'src/pages'),
-      '@services': resolve(__dirname, 'src/services'),
-      '@hooks': resolve(__dirname, 'src/hooks'),
-      '@utils': resolve(__dirname, 'src/utils'),
+      '@': fileURLToPath(new URL('./src', import.meta.url)),
+      '@components': fileURLToPath(new URL('./src/components', import.meta.url)),
+      '@pages': fileURLToPath(new URL('./src/pages', import.meta.url)),
+      '@services': fileURLToPath(new URL('./src/services', import.meta.url)),
+      '@hooks': fileURLToPath(new URL('./src/hooks', import.meta.url)),
+      '@utils': fileURLToPath(new URL('./src/utils', import.meta.url)),
     },
   },
 
@@ -62,11 +62,6 @@ export default defineConfig({
         additionalData: `@import "@/styles/variables.scss";`
       }
     }
-  },
-
-  // Environment variables
-  define: {
-    __APP_VERSION__: JSON.stringify(process.env.npm_package_version),
   },
 
   // Preview configuration

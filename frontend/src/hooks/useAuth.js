@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext, createContext } from 'react';
+import { useState, useEffect, useContext, createContext, useCallback } from 'react';
 import { authService } from '../services/api';
 
 // Create auth context
@@ -10,12 +10,19 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  // Initialize auth state
-  useEffect(() => {
-    initializeAuth();
+  const logout = useCallback(async () => {
+    try {
+      await authService.logout();
+    } catch {
+      console.warn('Logout error');
+    } finally {
+      setUser(null);
+      setIsAuthenticated(false);
+    }
   }, []);
 
-  const initializeAuth = async () => {
+  // Initialize auth state
+  const initializeAuth = useCallback(async () => {
     try {
       if (authService.isAuthenticated()) {
         const userData = authService.getStoredUser();
@@ -29,19 +36,23 @@ export const AuthProvider = ({ children }) => {
             if (response.success) {
               setUser(response.user);
             }
-          } catch (error) {
+          } catch {
             // If token is invalid, clear auth state
             await logout();
           }
         }
       }
-    } catch (error) {
-      console.error('Auth initialization error:', error);
+    } catch {
+      console.error('Auth initialization error');
       await logout();
     } finally {
       setLoading(false);
     }
-  };
+  }, [logout]);
+
+  useEffect(() => {
+    initializeAuth();
+  }, [initializeAuth]);
 
   const login = async (credentials, rememberMe = false) => {
     try {
@@ -85,41 +96,22 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = async () => {
-    try {
-      await authService.logout();
-    } catch (error) {
-      console.warn('Logout error:', error);
-    } finally {
-      setUser(null);
-      setIsAuthenticated(false);
-    }
-  };
-
   const updateUser = async (userData) => {
-    try {
-      const response = await authService.updateDetails(userData);
-      if (response.success) {
-        setUser(response.user);
-        return { success: true, user: response.user };
-      }
-      throw new Error(response.error || 'Update failed');
-    } catch (error) {
-      throw error;
+    const response = await authService.updateDetails(userData);
+    if (response.success) {
+      setUser(response.user);
+      return { success: true, user: response.user };
     }
+    throw new Error(response.error || 'Update failed');
   };
 
   const updatePassword = async (passwordData) => {
-    try {
-      const response = await authService.updatePassword(passwordData);
-      if (response.success) {
-        // Password update successful, user stays logged in with new token
-        return { success: true };
-      }
-      throw new Error(response.error || 'Password update failed');
-    } catch (error) {
-      throw error;
+    const response = await authService.updatePassword(passwordData);
+    if (response.success) {
+      // Password update successful, user stays logged in with new token
+      return { success: true };
     }
+    throw new Error(response.error || 'Password update failed');
   };
 
   const value = {

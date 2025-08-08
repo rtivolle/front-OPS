@@ -5,7 +5,7 @@ const DashboardPage = () => {
   const { t, language: currentLanguage } = useTranslation();
   const [userData, setUserData] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
-  const [stats, setStats] = useState({
+  const [stats] = useState({
     totalTasks: 42,
     completedTasks: 28,
     pendingTasks: 14,
