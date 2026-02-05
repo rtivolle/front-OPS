@@ -36,7 +36,7 @@ def ensure_storage() -> None:
 
 
 def create_document_id() -> str:
-    return uuid.uuid4().hex
+    return str(uuid.uuid4())
 
 
 def build_metadata(

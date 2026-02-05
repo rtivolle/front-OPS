@@ -29,18 +29,18 @@ Créer un système fonctionnel de gestion de documents intégré à Nextcloud av
   - [x] Dockerfile pour doc-worker
 
 #### 4. Déploiement de Nextcloud (**nc-core**)
-- [ ] Installer :
-  - [ ] Nginx
-  - [ ] PHP 8.2
-  - [ ] Postgres
-  - [ ] Redis
+- [x] Installer :
+  - [x] Nginx
+  - [x] PHP 8.2
+  - [x] Postgres
+  - [x] Redis
 - [ ] Configurer Nextcloud :
-  - [ ] **memcache.local** et **memcache.locking** sur Redis
-  - [ ] Activer le verrouillage des fichiers
-  - [ ] Désactiver les prévisualisations au départ
+  - [x] **memcache.local** et **memcache.locking** sur Redis
+  - [x] Activer le verrouillage des fichiers
+  - [x] Désactiver les prévisualisations au départ
   - [ ] Limite max de téléchargement : 200 MB
   - [ ] Activer le cron (fréquence : 5 minutes)
-- [ ] Créer un **compte service** (exemple : `doc-bot`) et un group **test**
+- [x] Créer un **compte service** (exemple : `doc-bot`) et un group **test**
 
 #### 5. Configuration du Webhook Flow
 - [ ] Activer Flow dans Nextcloud
@@ -58,18 +58,18 @@ Créer un système fonctionnel de gestion de documents intégré à Nextcloud av
 
 #### 7. Implémentation de l’OCR et stockage texte
 - [x] Ajouter la gestion des OCRs avec **OCRmyPDF** et **Tesseract** (langues : FR/EN)
-- [ ] Si le fichier est une image : convertir en PDF avant traitement
+- [x] Si le fichier est une image : convertir en PDF avant traitement
 - [x] Implémenter le stockage du texte extrait et des métadonnées (nom, chemin, hash, owner, horodatage) dans la base de données du **doc-worker**
 
 #### 8. Mise en place de l’index et de l’API de recherche
-- [ ] Configurer Qdrant/Chroma pour créer une collection “docs”
+- [x] Configurer Qdrant/Chroma pour créer une collection “docs”
 - [x] Implémenter un endpoint `/search?q=...` sur le service **doc-worker** qui :
   - [x] Accepte une requête de recherche (ex : `/search?q=<text>`)
   - [x] Renvoie une liste des résultats avec les champs : `score`, `extrait`, `lien NC`, et mettre en place un surlignage naïf
 
 #### 9. Création d’une interface utilisateur minimale
-- [ ] Développer une page web simple (FastAPI + template Jinja ou React)
-- [ ] Ajouter un champ de recherche pour les utilisateurs et afficher 10 résultats avec :
+- [x] Développer une page web simple (FastAPI + template Jinja ou React)
+- [x] Ajouter un champ de recherche pour les utilisateurs et afficher 10 résultats avec :
   - Titre du document
   - Extrait (texte OCR extrait)
   - Un lien direct vers le fichier dans Nextcloud

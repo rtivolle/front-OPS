@@ -5,3 +5,5 @@ redis
 python-magic
 ocrmypdf
 httpx
+qdrant-client
+jinja2
