@@ -6,6 +6,12 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
+      '/api/search': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api\/search/, '/search'),
+      },
       '/api': {
         target: 'http://localhost:5000',
         changeOrigin: true,

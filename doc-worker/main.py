@@ -9,7 +9,7 @@ from qdrant_client import QdrantClient
 from qdrant_client.http import models
 
 from config import STORAGE_PATH, WEBHOOK_SECRET, QDRANT_HOST, QDRANT_COLLECTION_NAME, REDIS_URL, NEXTCLOUD_URL, NEXTCLOUD_USER, NEXTCLOUD_APP_PASSWORD
-from storage import ensure_storage
+from storage import ensure_storage, get_storage_stats, get_recent_documents
 from tasks import ocr_and_index
 from embeddings import generate_vector
 from log_setup import setup_logging
@@ -164,3 +164,12 @@ async def search(request: Request, q: str = Query(None)):
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+@app.get("/search/stats")
+async def get_stats():
+    """Return storage statistics."""
+    return get_storage_stats()
+
+@app.get("/search/recent")
+async def get_recent():
+    """Return recent documents."""
+    return get_recent_documents()

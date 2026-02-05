@@ -65,6 +65,34 @@ def check_if_doc_exists(file_hash: str) -> dict[str, Any] | None:
     return None
 
 
+def get_storage_stats() -> dict[str, Any]:
+    ensure_storage()
+    stats = {"total_documents": 0, "processed_today": 0}
+    
+    with sqlite3.connect(DB_PATH) as conn:
+        cursor = conn.execute("SELECT COUNT(*) FROM documents")
+        stats["total_documents"] = cursor.fetchone()[0]
+        
+        # Count processed today (naive check based on created_at string partial match for UTC date)
+        today_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        cursor = conn.execute("SELECT COUNT(*) FROM documents WHERE created_at LIKE ?", (f"{today_str}%",))
+        stats["processed_today"] = cursor.fetchone()[0]
+        
+    return stats
+
+
+def get_recent_documents(limit: int = 5) -> list[dict[str, Any]]:
+    ensure_storage()
+    docs = []
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.row_factory = sqlite3.Row
+        cursor = conn.execute("SELECT * FROM documents ORDER BY created_at DESC LIMIT ?", (limit,))
+        rows = cursor.fetchall()
+        for row in rows:
+            docs.append(dict(row))
+    return docs
+
+
 def build_metadata(
     *,
     document_id: str,

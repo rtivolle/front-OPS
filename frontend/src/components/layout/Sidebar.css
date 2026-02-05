@@ -1,0 +1,111 @@
+.sidebar {
+    width: var(--sidebar-width);
+    height: 100vh;
+    background-color: #0f172a;
+    /* Slate-900 */
+    color: white;
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: 50;
+}
+
+.sidebar-brand {
+    height: var(--header-height);
+    display: flex;
+    align-items: center;
+    padding: 0 1.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.logo-icon {
+    margin-right: 0.75rem;
+    color: var(--primary);
+}
+
+.brand-name {
+    font-weight: 700;
+    font-size: 1.25rem;
+    letter-spacing: -0.025em;
+}
+
+.sidebar-nav {
+    flex: 1;
+    padding: 1.5rem 1rem;
+}
+
+.sidebar-nav ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.sidebar-nav li {
+    margin-bottom: 0.5rem;
+}
+
+.nav-item {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius-md);
+    color: #94a3b8;
+    /* Slate-400 */
+    text-decoration: none;
+    transition: all 0.2s;
+    font-weight: 500;
+}
+
+.nav-item:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    color: white;
+}
+
+.nav-item.active {
+    background-color: var(--primary);
+    color: white;
+}
+
+.nav-item .icon {
+    margin-right: 0.75rem;
+    font-size: 1.1rem;
+}
+
+.sidebar-footer {
+    padding: 1rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+}
+
+.avatar {
+    width: 36px;
+    height: 36px;
+    background-color: var(--secondary);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    margin-right: 0.75rem;
+}
+
+.user-details {
+    display: flex;
+    flex-direction: column;
+}
+
+.user-name {
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.user-role {
+    font-size: 0.75rem;
+    color: #94a3b8;
+}
