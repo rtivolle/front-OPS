@@ -45,6 +45,29 @@ services:
     environment:
       - REDIS_URL=redis://redis:6379/0
       - NEXTCLOUD_URL=http://web
+      - NEXTCLOUD_USER=doc-bot
+      - NEXTCLOUD_APP_PASSWORD=change-me
+      - WEBHOOK_SECRET=change-me
+      - STORAGE_PATH=/data
+    volumes:
+      - doc_worker_data:/data
+    depends_on:
+      - redis
+      - app
+
+  doc-worker-worker:
+    build: ./doc-worker
+    restart: always
+    command: celery -A tasks.celery_app worker --loglevel=info
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - NEXTCLOUD_URL=http://web
+      - NEXTCLOUD_USER=doc-bot
+      - NEXTCLOUD_APP_PASSWORD=change-me
+      - WEBHOOK_SECRET=change-me
+      - STORAGE_PATH=/data
+    volumes:
+      - doc_worker_data:/data
     depends_on:
       - redis
       - app
@@ -52,3 +75,4 @@ services:
 volumes:
   db_data:
   nextcloud_data:
+  doc_worker_data:

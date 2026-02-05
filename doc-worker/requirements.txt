@@ -4,3 +4,4 @@ celery
 redis
 python-magic
 ocrmypdf
+httpx

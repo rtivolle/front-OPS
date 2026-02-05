@@ -22,11 +22,11 @@ Créer un système fonctionnel de gestion de documents intégré à Nextcloud av
 - [x] Configurer des snapshots horaires et journaliers
 
 #### 3. Initialisation du dépôt Git
-- [ ] Créer une structure de fichier pour un **monorepo**
-- [ ] Ajouter un fichier `docker-compose.yml` pour déployer **nc-core** et **doc-worker**
+- [x] Créer une structure de fichier pour un **monorepo**
+- [x] Ajouter un fichier `docker-compose.yml` pour déployer **nc-core** et **doc-worker**
 - [ ] Ajouter des Dockerfiles pour chaque service :
-  - [ ] Dockerfile pour nc-core
-  - [ ] Dockerfile pour doc-worker
+  - [x] Dockerfile pour nc-core
+  - [x] Dockerfile pour doc-worker
 
 #### 4. Déploiement de Nextcloud (**nc-core**)
 - [ ] Installer :
@@ -50,22 +50,22 @@ Créer un système fonctionnel de gestion de documents intégré à Nextcloud av
 - [ ] Authentification du webhook via un jeton d’application ou une clé secrète partagée
 
 #### 6. Développement du squelette de **doc-worker**
-- [ ] Configuration de base de FastAPI et des routes nécessaires :
-  - [ ] Endpoint `/hook/nextcloud` pour valider et traiter les notifications HTTP
-- [ ] Implémenter le téléchargement des fichiers via WebDAV avec un app password dédié au compte service
-- [ ] Mettre en place une queue Celery connectée à Redis avec une tâche basique :
-  - [ ] Prototype de tâche `ocr_and_index(path, fileId)`
+- [x] Configuration de base de FastAPI et des routes nécessaires :
+  - [x] Endpoint `/hook/nextcloud` pour valider et traiter les notifications HTTP
+- [x] Implémenter le téléchargement des fichiers via WebDAV avec un app password dédié au compte service
+- [x] Mettre en place une queue Celery connectée à Redis avec une tâche basique :
+  - [x] Prototype de tâche `ocr_and_index(path, fileId)`
 
 #### 7. Implémentation de l’OCR et stockage texte
-- [ ] Ajouter la gestion des OCRs avec **OCRmyPDF** et **Tesseract** (langues : FR/EN)
+- [x] Ajouter la gestion des OCRs avec **OCRmyPDF** et **Tesseract** (langues : FR/EN)
 - [ ] Si le fichier est une image : convertir en PDF avant traitement
-- [ ] Implémenter le stockage du texte extrait et des métadonnées (nom, chemin, hash, owner, horodatage) dans la base de données du **doc-worker**
+- [x] Implémenter le stockage du texte extrait et des métadonnées (nom, chemin, hash, owner, horodatage) dans la base de données du **doc-worker**
 
 #### 8. Mise en place de l’index et de l’API de recherche
 - [ ] Configurer Qdrant/Chroma pour créer une collection “docs”
-- [ ] Implémenter un endpoint `/search?q=...` sur le service **doc-worker** qui :
-  - [ ] Accepte une requête de recherche (ex : `/search?q=<text>`)
-  - [ ] Renvoie une liste des résultats avec les champs : `score`, `extrait`, `lien NC`, et mettre en place un surlignage naïf
+- [x] Implémenter un endpoint `/search?q=...` sur le service **doc-worker** qui :
+  - [x] Accepte une requête de recherche (ex : `/search?q=<text>`)
+  - [x] Renvoie une liste des résultats avec les champs : `score`, `extrait`, `lien NC`, et mettre en place un surlignage naïf
 
 #### 9. Création d’une interface utilisateur minimale
 - [ ] Développer une page web simple (FastAPI + template Jinja ou React)
