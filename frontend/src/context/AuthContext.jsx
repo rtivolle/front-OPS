@@ -1,4 +1,5 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
+import axios from 'axios';
 import {
     onAuthStateChanged,
     signInWithEmailAndPassword,
@@ -15,16 +16,22 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+        const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
             setUser(currentUser);
-            setLoading(false);
             if (currentUser) {
-                // You can get the JWT token if needed for backend calls
-                currentUser.getIdToken().then(token => {
-                    // console.log("Firebase ID Token:", token);
-                    // axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-                });
+                try {
+                    const token = await currentUser.getIdToken();
+                    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+
+                    // Sync user with backend
+                    await axios.post('/api/auth/sync');
+                } catch (error) {
+                    console.error("Error setting up auth:", error);
+                }
+            } else {
+                delete axios.defaults.headers.common['Authorization'];
             }
+            setLoading(false);
         });
         return unsubscribe;
     }, []);

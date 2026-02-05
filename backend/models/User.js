@@ -13,16 +13,22 @@ const UserSchema = new mongoose.Schema({
   },
   password: {
     type: String,
-    required: [true, 'Please provide a password'],
+    required: false,
     minlength: 6,
     select: false, // Do not return password by default
   },
+  firebaseUid: {
+    type: String,
+    unique: true,
+    sparse: true,
+  }
 });
 
 // Hash password before saving
 UserSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) {
+  if (!this.isModified('password') || !this.password) {
     next();
+    return;
   }
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
