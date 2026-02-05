@@ -17,16 +17,16 @@ Créer un système fonctionnel de gestion de documents intégré à Nextcloud av
   - [ ] Configurer les pare-feu pour sécuriser les conteneurs
 
 #### 2. Configuration des datasets ZFS sur Proxmox
-- [ ] Créer un dataset pour stocker les données Nextcloud (zfs/nc_data)
-- [ ] Créer un dataset pour stocker l’index des documents (zfs/doc_index)
-- [ ] Configurer des snapshots horaires et journaliers
+- [x] Créer un dataset pour stocker les données Nextcloud (zfs/nc_data)
+- [x] Créer un dataset pour stocker l’index des documents (zfs/doc_index)
+- [x] Configurer des snapshots horaires et journaliers
 
 #### 3. Initialisation du dépôt Git
-- [x] Créer une structure de fichier pour un **monorepo**
-- [x] Ajouter un fichier `docker-compose.yml` pour déployer **nc-core** et **doc-worker**
-- [x] Ajouter des Dockerfiles pour chaque service :
-  - [x] Dockerfile pour nc-core
-  - [x] Dockerfile pour doc-worker
+- [ ] Créer une structure de fichier pour un **monorepo**
+- [ ] Ajouter un fichier `docker-compose.yml` pour déployer **nc-core** et **doc-worker**
+- [ ] Ajouter des Dockerfiles pour chaque service :
+  - [ ] Dockerfile pour nc-core
+  - [ ] Dockerfile pour doc-worker
 
 #### 4. Déploiement de Nextcloud (**nc-core**)
 - [ ] Installer :
