@@ -2,15 +2,21 @@ import logging
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, Query
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
+from qdrant_client import QdrantClient
+from qdrant_client.http import models
 
-from config import STORAGE_PATH, WEBHOOK_SECRET
-from storage import ensure_storage, load_metadata, read_ocr_text
+from config import STORAGE_PATH, WEBHOOK_SECRET, QDRANT_HOST
+from storage import ensure_storage
 from tasks import ocr_and_index
 
 logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Doc-Worker API")
+templates = Jinja2Templates(directory="templates")
 
 
 @app.on_event("startup")
@@ -19,9 +25,9 @@ def startup() -> None:
     ensure_storage()
 
 
-@app.get("/")
-async def root() -> dict[str, str]:
-    return {"message": "Doc-Worker is running"}
+@app.get("/", response_class=HTMLResponse)
+async def index(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request, "query": "", "results": []})
 
 
 def _validate_webhook(request: Request) -> None:
@@ -46,32 +52,63 @@ async def nextcloud_hook(request: Request) -> dict[str, Any]:
 
 
 @app.get("/search")
-async def search(query: str) -> dict[str, Any]:
-    if not query:
-        raise HTTPException(status_code=400, detail="query is required")
+async def search(request: Request, q: str = Query(None)):
+    if not q:
+        if "text/html" not in request.headers.get("accept", ""):
+            return {"results": []}
+        return templates.TemplateResponse("index.html", {"request": request, "query": "", "results": []})
+
     results = []
-    for metadata in load_metadata():
-        text = read_ocr_text(metadata.get("ocr_text_path"))
-        lower_text = text.lower()
-        lower_query = query.lower()
-        if lower_query in lower_text:
-            start = max(lower_text.find(lower_query) - 40, 0)
-            end = min(start + 200, len(text))
-            excerpt = text[start:end].replace("\n", " ").strip()
-            score = lower_text.count(lower_query)
-            results.append(
-                {
-                    "score": score,
-                    "excerpt": excerpt,
-                    "nextcloud_link": metadata.get("nextcloud_link"),
-                    "file_name": metadata.get("file_name"),
-                }
-            )
-    results.sort(key=lambda item: item["score"], reverse=True)
-    return {"query": query, "results": results[:10]}
+    try:
+        client = QdrantClient(host=QDRANT_HOST, port=6333)
+        # Search using scroll with filter for text match
+        search_result = client.scroll(
+            collection_name="docs",
+            scroll_filter=models.Filter(
+                must=[
+                    models.FieldCondition(
+                        key="text",
+                        match=models.MatchText(text=q)
+                    )
+                ]
+            ),
+            limit=10,
+            with_payload=True,
+        )
+        points = search_result[0]
+
+        for hit in points:
+            payload = hit.payload
+            text = payload.get("text", "")
+            lower_text = text.lower()
+            lower_query = q.lower()
+
+            excerpt = ""
+            if lower_query in lower_text:
+                idx = lower_text.find(lower_query)
+                start = max(idx - 80, 0)
+                end = min(idx + 120, len(text))
+                excerpt = text[start:end].replace("\n", " ").strip()
+                if start > 0: excerpt = "..." + excerpt
+                if end < len(text): excerpt = excerpt + "..."
+            else:
+                excerpt = text[:200].replace("\n", " ").strip() + "..."
+
+            results.append({
+                "score": 1,
+                "excerpt": excerpt,
+                "nextcloud_link": payload.get("nextcloud_link"),
+                "file_name": payload.get("file_name"),
+            })
+    except Exception as e:
+        logger.error("Search failed: %s", e)
+
+    if "text/html" in request.headers.get("accept", ""):
+        return templates.TemplateResponse("index.html", {"request": request, "query": q, "results": results})
+
+    return {"query": q, "results": results}
 
 
 if __name__ == "__main__":
     import uvicorn
-
     uvicorn.run(app, host="0.0.0.0", port=8000)

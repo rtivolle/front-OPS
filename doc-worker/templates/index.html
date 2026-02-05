@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doc-Worker - Recherche</title>
+    <style>
+        body { font-family: sans-serif; max-width: 800px; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; }
+        .search-box { margin-bottom: 2rem; display: flex; gap: 0.5rem; }
+        input[type="text"] { flex: 1; padding: 0.5rem; font-size: 1rem; }
+        button { padding: 0.5rem 1rem; font-size: 1rem; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 4px; }
+        .result-item { margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid #eee; }
+        .result-item h3 { margin: 0 0 0.5rem 0; }
+        .result-item .excerpt { font-size: 0.9rem; color: #555; font-style: italic; }
+        .result-item .link { font-size: 0.8rem; color: #007bff; text-decoration: none; }
+        .no-results { color: #888; }
+        mark { background: yellow; }
+    </style>
+</head>
+<body>
+    <h1>Recherche de documents</h1>
+
+    <form action="/search" method="get" class="search-box">
+        <input type="text" name="q" value="{{ query }}" placeholder="Rechercher dans vos documents..." required>
+        <button type="submit">Rechercher</button>
+    </form>
+
+    <div class="results">
+        {% if query %}
+            {% if results %}
+                <p>{{ results|length }} résultat(s) pour "{{ query }}"</p>
+                {% for result in results %}
+                    <div class="result-item">
+                        <h3>{{ result.file_name }}</h3>
+                        <p class="excerpt">{{ result.excerpt }}</p>
+                        <a href="{{ result.nextcloud_link }}" class="link" target="_blank">Ouvrir dans Nextcloud</a>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p class="no-results">Aucun résultat trouvé pour "{{ query }}".</p>
+            {% endif %}
+        {% endif %}
+    </div>
+</body>
+</html>

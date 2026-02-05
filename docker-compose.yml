@@ -24,9 +24,31 @@ services:
       - POSTGRES_DB=nextcloud
       - POSTGRES_USER=nextcloud
       - POSTGRES_PASSWORD=nextcloud_pass
+      - NEXTCLOUD_ADMIN_USER=${NEXTCLOUD_ADMIN_USER:-admin}
+      - NEXTCLOUD_ADMIN_PASSWORD=${NEXTCLOUD_ADMIN_PASSWORD:-admin_pass}
+      - NEXTCLOUD_TRUSTED_DOMAINS=web localhost
     depends_on:
       - db
       - redis
+
+  setup-nc:
+    build: ./nc-core
+    volumes:
+      - nextcloud_data:/var/www/html
+    environment:
+      - NEXTCLOUD_BOT_PASSWORD=${NEXTCLOUD_BOT_PASSWORD:-change-me}
+    entrypoint: /usr/local/bin/setup-nextcloud.sh
+    depends_on:
+      - app
+
+  cron:
+    build: ./nc-core
+    restart: always
+    volumes:
+      - nextcloud_data:/var/www/html
+    entrypoint: /bin/sh -c "while true; do php -f /var/www/html/cron.php; sleep 300; done"
+    depends_on:
+      - app
 
   web:
     image: nginx:alpine
@@ -44,16 +66,18 @@ services:
     restart: always
     environment:
       - REDIS_URL=redis://redis:6379/0
+      - QDRANT_HOST=qdrant
       - NEXTCLOUD_URL=http://web
       - NEXTCLOUD_USER=doc-bot
-      - NEXTCLOUD_APP_PASSWORD=change-me
-      - WEBHOOK_SECRET=change-me
+      - NEXTCLOUD_APP_PASSWORD=${NEXTCLOUD_BOT_PASSWORD:-change-me}
+      - WEBHOOK_SECRET=${WEBHOOK_SECRET:-change-me}
       - STORAGE_PATH=/data
     volumes:
       - doc_worker_data:/data
     depends_on:
       - redis
       - app
+      - qdrant
 
   doc-worker-worker:
     build: ./doc-worker
@@ -61,18 +85,29 @@ services:
     command: celery -A tasks.celery_app worker --loglevel=info
     environment:
       - REDIS_URL=redis://redis:6379/0
+      - QDRANT_HOST=qdrant
       - NEXTCLOUD_URL=http://web
       - NEXTCLOUD_USER=doc-bot
-      - NEXTCLOUD_APP_PASSWORD=change-me
-      - WEBHOOK_SECRET=change-me
+      - NEXTCLOUD_APP_PASSWORD=${NEXTCLOUD_BOT_PASSWORD:-change-me}
+      - WEBHOOK_SECRET=${WEBHOOK_SECRET:-change-me}
       - STORAGE_PATH=/data
     volumes:
       - doc_worker_data:/data
     depends_on:
       - redis
       - app
+      - qdrant
+
+  qdrant:
+    image: qdrant/qdrant
+    restart: always
+    ports:
+      - "6333:6333"
+    volumes:
+      - qdrant_data:/qdrant/storage
 
 volumes:
   db_data:
   nextcloud_data:
   doc_worker_data:
+  qdrant_data:
