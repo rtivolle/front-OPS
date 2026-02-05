@@ -5,8 +5,8 @@ const cors = require('cors');
 
 // Connect to MongoDB
 mongoose.connect(process.env.MONGO_URI)
-.then(() => console.log('MongoDB Connected'))
-.catch(err => console.log(err));
+  .then(() => console.log('MongoDB Connected'))
+  .catch(err => console.log(err));
 
 const app = express();
 
@@ -25,7 +25,9 @@ app.get('/', (req, res) => {
 });
 
 // Mount auth routes
+// Mount routes
 app.use('/api/auth', require('./routes/auth'));
+app.use('/api/upload', require('./routes/upload'));
 
 const PORT = process.env.PORT || 5000;
 

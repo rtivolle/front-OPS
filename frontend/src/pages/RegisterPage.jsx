@@ -20,7 +20,16 @@ const RegisterPage = () => {
       await register('User', email, password); // hardcoding 'User' as username for now as the backend API might expect it
       navigate('/login');
     } catch (err) {
-      setError(err.response?.data?.error || 'Registration failed.');
+      console.error(err);
+      let msg = 'Registration failed.';
+      if (err.code === 'auth/email-already-in-use') {
+        msg = 'Email is already in use.';
+      } else if (err.code === 'auth/weak-password') {
+        msg = 'Password is too weak.';
+      } else if (err.code === 'auth/invalid-email') {
+        msg = 'Invalid email address.';
+      }
+      setError(msg);
     } finally {
       setIsSubmitting(false);
     }
