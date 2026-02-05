@@ -1,5 +1,5 @@
 import sqlite3
-import uuid
+import hashlib
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -24,6 +24,7 @@ def ensure_storage() -> None:
                 file_id TEXT,
                 file_path TEXT NOT NULL,
                 file_name TEXT NOT NULL,
+                file_hash TEXT,
                 owner TEXT,
                 downloaded_path TEXT NOT NULL,
                 ocr_pdf_path TEXT,
@@ -33,10 +34,35 @@ def ensure_storage() -> None:
             )
             """
         )
+        try:
+            conn.execute("ALTER TABLE documents ADD COLUMN file_hash TEXT")
+        except sqlite3.OperationalError:
+            pass  # Column likely exists
 
 
 def create_document_id() -> str:
     return str(uuid.uuid4())
+
+
+def calculate_file_hash(file_path: Path) -> str:
+    sha256_hash = hashlib.sha256()
+    with open(file_path, "rb") as f:
+        for byte_block in iter(lambda: f.read(4096), b""):
+            sha256_hash.update(byte_block)
+    return sha256_hash.hexdigest()
+
+
+def check_if_doc_exists(file_hash: str) -> dict[str, Any] | None:
+    ensure_storage()
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.row_factory = sqlite3.Row
+        cursor = conn.execute(
+            "SELECT * FROM documents WHERE file_hash = ?", (file_hash,)
+        )
+        row = cursor.fetchone()
+        if row:
+            return dict(row)
+    return None
 
 
 def build_metadata(
@@ -44,6 +70,7 @@ def build_metadata(
     document_id: str,
     file_path: str,
     file_id: str | None,
+    file_hash: str | None,
     owner: str | None,
     downloaded_path: Path,
     ocr_pdf_path: Path | None,
@@ -56,6 +83,7 @@ def build_metadata(
         "file_id": file_id,
         "file_path": file_path,
         "file_name": file_name,
+        "file_hash": file_hash,
         "owner": owner,
         "downloaded_path": str(downloaded_path),
         "ocr_pdf_path": str(ocr_pdf_path) if ocr_pdf_path else None,
@@ -75,19 +103,21 @@ def save_metadata(document_id: str, metadata: dict[str, Any]) -> Path:
                 file_id,
                 file_path,
                 file_name,
+                file_hash,
                 owner,
                 downloaded_path,
                 ocr_pdf_path,
                 ocr_text_path,
                 created_at,
                 nextcloud_link
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 metadata["id"],
                 metadata.get("file_id"),
                 metadata["file_path"],
                 metadata["file_name"],
+                metadata.get("file_hash"),
                 metadata.get("owner"),
                 metadata["downloaded_path"],
                 metadata.get("ocr_pdf_path"),

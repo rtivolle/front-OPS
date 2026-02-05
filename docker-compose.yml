@@ -72,6 +72,12 @@ services:
       - NEXTCLOUD_APP_PASSWORD=${NEXTCLOUD_BOT_PASSWORD:-change-me}
       - WEBHOOK_SECRET=${WEBHOOK_SECRET:-change-me}
       - STORAGE_PATH=/data
+      - LOG_FORMAT=json
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
     volumes:
       - doc_worker_data:/data
     depends_on:
@@ -82,7 +88,12 @@ services:
   doc-worker-worker:
     build: ./doc-worker
     restart: always
-    command: celery -A tasks.celery_app worker --loglevel=info
+    command: celery -A tasks.celery_app worker --loglevel=info -c 1
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
     environment:
       - REDIS_URL=redis://redis:6379/0
       - QDRANT_HOST=qdrant
