@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+python-multipart
+celery
+redis
+httpx
+python-magic

@@ -6,9 +6,13 @@ A full-stack authentication application with React frontend and Express.js backe
 
 ```
 front-OPS/
-├── frontend/          # React + Vite frontend
-├── backend/           # Express.js + MongoDB backend
-├── README.md          # This file
+├── apps/
+│   ├── frontend/          # React + Vite frontend
+│   ├── backend/           # Express.js + MongoDB backend
+│   ├── nc-core/           # Nextcloud core service
+│   └── doc-worker/        # Document processing service
+├── plan-nextcloud-integration.md # Integration plan
+└── README.md              # This file
 ```
 
 ## Setup Instructions
@@ -17,7 +21,7 @@ front-OPS/
 
 1. Navigate to the backend directory:
    ```bash
-   cd backend
+   cd apps/backend
    ```
 
 2. Install dependencies:
@@ -30,10 +34,10 @@ front-OPS/
    cp .env.example .env
    ```
 
-4. Update the `.env` file with your configuration:
-   - `MONGO_URI`: Your MongoDB connection string
-   - `JWT_SECRET`: A secure secret key for JWT tokens
-   - `PORT`: Server port (optional, defaults to 5000)
+4. Update the .env file with your configuration:
+   - MONGO_URI: Your MongoDB connection string
+   - JWT_SECRET: A secure secret key for JWT tokens
+   - PORT: Server port (optional, defaults to 5000)
 
 5. Start the backend server:
    ```bash
@@ -44,7 +48,7 @@ front-OPS/
 
 1. Navigate to the frontend directory:
    ```bash
-   cd frontend
+   cd apps/frontend
    ```
 
 2. Install dependencies:
@@ -57,7 +61,7 @@ front-OPS/
    npm run dev
    ```
 
-4. Open your browser to `http://localhost:5173`
+4. Open your browser to http://localhost:5173
 
 ## Features
 
@@ -70,9 +74,9 @@ front-OPS/
 
 ## API Endpoints
 
-- `POST /api/auth/register` - Register a new user
-- `POST /api/auth/login` - Login user
-- `GET /` - Health check endpoint
+- POST /api/auth/register - Register a new user
+- POST /api/auth/login - Login user
+- GET / - Health check endpoint
 
 ## Development
 
@@ -80,7 +84,7 @@ front-OPS/
 
 Frontend:
 ```bash
-cd frontend
+cd apps/frontend
 npm run lint    # Run ESLint
 npm run build   # Build for production
 ```

@@ -1,0 +1,45 @@
+services:
+  db:
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      POSTGRES_DB: nextcloud
+      POSTGRES_USER: nextcloud
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - nextcloud_db:/var/lib/postgresql/data
+
+  redis:
+    image: redis:alpine
+    restart: always
+
+  nc-core:
+    build: ./apps/nc-core
+    restart: always
+    ports:
+      - "8080:80"
+    environment:
+      - POSTGRES_HOST=db
+      - POSTGRES_DB=nextcloud
+      - POSTGRES_USER=nextcloud
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - REDIS_HOST=redis
+    depends_on:
+      - db
+      - redis
+    volumes:
+      - nextcloud_data:/var/www/html
+
+  doc-worker:
+    build: ./apps/doc-worker
+    restart: always
+    environment:
+      - NEXTCLOUD_URL=http://nc-core
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - nc-core
+      - redis
+
+volumes:
+  nextcloud_db:
+  nextcloud_data:
