@@ -1,16 +1,20 @@
 require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
+const cors = require('cors');
 
 // Connect to MongoDB
-mongoose.connect(process.env.MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
+mongoose.connect(process.env.MONGO_URI)
 .then(() => console.log('MongoDB Connected'))
 .catch(err => console.log(err));
 
 const app = express();
+
+// CORS middleware for development
+app.use(cors({
+  origin: 'http://localhost:5173', // Vite dev server default port
+  credentials: true
+}));
 
 // Body parser middleware
 app.use(express.json());
