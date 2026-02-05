@@ -1,76 +1,40 @@
 const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
-const jwt = require('jsonwebtoken');
+const { protect } = require('../middleware/auth');
 
-// Utility to generate token
-const getSignedJwtToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: '1d',
-  });
-};
-
-// @desc    Register user
-// @route   POST /api/auth/register
-router.post('/register', async (req, res) => {
-  const { email, password } = req.body;
-
-  // Validate email & password
-  if (!email || !password) {
-    return res.status(400).json({ success: false, error: 'Please provide an email and password' });
-  }
-
-  if (password.length < 6) {
-    return res.status(400).json({ success: false, error: 'Password must be at least 6 characters long' });
-  }
-
+// @desc    Sync Firebase user with MongoDB
+// @route   POST /api/auth/sync
+router.post('/sync', protect, async (req, res) => {
   try {
-    // Create user
-    const user = await User.create({
-      email,
-      password,
-    });
+    const { uid, email, email_verified } = req.user; // req.user is set by protect middleware (Firebase decoded token)
 
-    // Create token
-    const token = getSignedJwtToken(user._id);
-
-    res.status(200).json({ success: true, token });
-  } catch (error) {
-    res.status(400).json({ success: false, error: error.message });
-  }
-});
-
-// @desc    Login user
-// @route   POST /api/auth/login
-router.post('/login', async (req, res) => {
-  const { email, password } = req.body;
-
-  // Validate email & password
-  if (!email || !password) {
-    return res.status(400).json({ success: false, error: 'Please provide an email and password' });
-  }
-
-  try {
-    // Check for user
-    const user = await User.findOne({ email }).select('+password');
+    let user = await User.findOne({ firebaseUid: uid });
 
     if (!user) {
-      return res.status(401).json({ success: false, error: 'Invalid credentials' });
+      // Check if user exists by email (legacy or first time sync)
+      user = await User.findOne({ email });
+
+      if (user) {
+        // Link existing user to firebase only if email is verified
+        if (!email_verified) {
+            return res.status(403).json({ success: false, error: 'Email must be verified to link accounts' });
+        }
+        user.firebaseUid = uid;
+        await user.save();
+      } else {
+        // Create new user
+        user = await User.create({
+          email,
+          firebaseUid: uid,
+        });
+      }
     }
 
-    // Check if password matches
-    const isMatch = await user.matchPassword(password);
-
-    if (!isMatch) {
-      return res.status(401).json({ success: false, error: 'Invalid credentials' });
-    }
-
-    // Create token
-    const token = getSignedJwtToken(user._id);
-
-    res.status(200).json({ success: true, token });
+    res.status(200).json({ success: true, user });
   } catch (error) {
-    res.status(400).json({ success: false, error: error.message });
+    console.error('Sync Error:', error);
+    res.status(500).json({ success: false, error: 'Server Error' });
   }
 });
 
