@@ -19,11 +19,10 @@ const AuthContext = createContext(null);
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
+    const refreshPromiseRef = React.useRef(null);
 
     // Setup automatic token refresh on 401 responses
     useEffect(() => {
-        let refreshPromise = null;
-
         const handleUnauthorized = async (err) => {
             const originalConfig = err.config;
             
@@ -34,18 +33,18 @@ export const AuthProvider = ({ children }) => {
                 if (currentUser) {
                     try {
                         // Use existing refresh promise if one is in progress
-                        if (!refreshPromise) {
-                            refreshPromise = currentUser.getIdToken(true)
-                                .finally(() => { refreshPromise = null; });
+                        if (!refreshPromiseRef.current) {
+                            refreshPromiseRef.current = currentUser.getIdToken(true)
+                                .finally(() => { refreshPromiseRef.current = null; });
                         }
-                        const freshToken = await refreshPromise;
+                        const freshToken = await refreshPromiseRef.current;
                         
                         axios.defaults.headers.common['Authorization'] = `Bearer ${freshToken}`;
                         originalConfig.headers['Authorization'] = `Bearer ${freshToken}`;
                         return axios(originalConfig);
                     } catch (refreshErr) {
                         console.error("Token refresh failed:", refreshErr);
-                        refreshPromise = null;
+                        refreshPromiseRef.current = null;
                         return Promise.reject(refreshErr);
                     }
                 }
@@ -60,7 +59,6 @@ export const AuthProvider = ({ children }) => {
 
         return () => {
             axios.interceptors.response.eject(responseInterceptor);
-            refreshPromise = null;
         };
     }, []);
 
