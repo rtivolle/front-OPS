@@ -22,6 +22,8 @@ export const AuthProvider = ({ children }) => {
 
     // Setup automatic token refresh on 401 responses
     useEffect(() => {
+        let refreshPromise = null;
+
         const handleUnauthorized = async (err) => {
             const originalConfig = err.config;
             
@@ -31,12 +33,19 @@ export const AuthProvider = ({ children }) => {
                 const currentUser = auth.currentUser;
                 if (currentUser) {
                     try {
-                        const freshToken = await currentUser.getIdToken(true);
+                        // Use existing refresh promise if one is in progress
+                        if (!refreshPromise) {
+                            refreshPromise = currentUser.getIdToken(true)
+                                .finally(() => { refreshPromise = null; });
+                        }
+                        const freshToken = await refreshPromise;
+                        
                         axios.defaults.headers.common['Authorization'] = `Bearer ${freshToken}`;
                         originalConfig.headers['Authorization'] = `Bearer ${freshToken}`;
                         return axios(originalConfig);
                     } catch (refreshErr) {
                         console.error("Token refresh failed:", refreshErr);
+                        refreshPromise = null;
                         return Promise.reject(refreshErr);
                     }
                 }
@@ -51,6 +60,7 @@ export const AuthProvider = ({ children }) => {
 
         return () => {
             axios.interceptors.response.eject(responseInterceptor);
+            refreshPromise = null;
         };
     }, []);
 
