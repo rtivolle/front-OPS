@@ -21,11 +21,14 @@ const LoginPage = () => {
       navigate('/dashboard');
     } catch (err) {
       console.error(err);
-      let msg = 'Failed to log in.';
-      if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
-        msg = 'Invalid email or password.';
-      } else if (err.code === 'auth/too-many-requests') {
-        msg = 'Too many failed attempts. Please try again later.';
+      const friendlyMessage = err.friendlyMessage;
+      let msg = friendlyMessage || 'Failed to log in.';
+      if (!friendlyMessage) {
+        if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
+          msg = 'Invalid email or password.';
+        } else if (err.code === 'auth/too-many-requests') {
+          msg = 'Too many failed attempts. Please try again later.';
+        }
       }
       setError(msg);
     } finally {
